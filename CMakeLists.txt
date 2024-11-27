@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-#  Root CMake file for livekit-client-cpp-sdk
+#  Root CMake file for websocket-client
 #
 # ----------------------------------------------------------------------------
 cmake_minimum_required (VERSION 3.8)
