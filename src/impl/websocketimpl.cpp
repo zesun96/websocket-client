@@ -37,7 +37,7 @@ const string PemBeginCertificateTag = "-----BEGIN CERTIFICATE-----";
 WebSocket::WebSocket(optional<Configuration> optConfig, certificate_ptr certificate)
     : config(optConfig ? std::move(*optConfig) : Configuration()),
       mRecvQueue(RECV_QUEUE_LIMIT, message_size_func) {
-	// PLOG_VERBOSE << "Creating WebSocket";
+	PLOG_VERBOSE << "Creating WebSocket";
 
 	if (certificate) {
 		mCertificate = std::move(certificate);
@@ -59,15 +59,15 @@ WebSocket::WebSocket(optional<Configuration> optConfig, certificate_ptr certific
 			throw std::invalid_argument(
 			    "Proxy server support for WebSocket is not implemented for Socks5");
 		if (config.proxyServer->username || config.proxyServer->password) {
-			// PLOG_WARNING << "HTTP authentication support for proxy is not implemented";
+			PLOG_WARNING << "HTTP authentication support for proxy is not implemented";
 		}
 	}
 }
 
-WebSocket::~WebSocket() { /*PLOG_VERBOSE << "Destroying WebSocket";*/ }
+WebSocket::~WebSocket() { PLOG_VERBOSE << "Destroying WebSocket"; }
 
 void WebSocket::open(const string &url) {
-	// PLOG_VERBOSE << "Opening WebSocket to URL: " << url;
+	PLOG_VERBOSE << "Opening WebSocket to URL: " << url;
 
 	if (state != State::Closed)
 		throw std::logic_error("WebSocket must be closed before opening");
@@ -94,7 +94,7 @@ void WebSocket::open(const string &url) {
 	string username = utils::url_decode(m[6]);
 	string password = utils::url_decode(m[8]);
 	if (!username.empty() || !password.empty()) {
-		// PLOG_WARNING << "HTTP authentication support for WebSocket is not implemented";
+		PLOG_WARNING << "HTTP authentication support for WebSocket is not implemented";
 	}
 
 	string host;
@@ -139,7 +139,7 @@ void WebSocket::open(const string &url) {
 void WebSocket::close() {
 	auto s = state.load();
 	if (s == State::Connecting || s == State::Open) {
-		// PLOG_VERBOSE << "Closing WebSocket";
+		PLOG_VERBOSE << "Closing WebSocket";
 		changeState(State::Closing);
 		if (auto transport = std::atomic_load(&mWsTransport))
 			transport->stop();
@@ -220,7 +220,7 @@ shared_ptr<T> emplaceTransport(WebSocket *ws, shared_ptr<T> *member, shared_ptr<
 }
 
 shared_ptr<TcpTransport> WebSocket::setTcpTransport(shared_ptr<TcpTransport> transport) {
-	// PLOG_VERBOSE << "Starting TCP transport";
+	PLOG_VERBOSE << "Starting TCP transport";
 
 	if (!transport)
 		throw std::logic_error("TCP transport is null");
@@ -268,14 +268,14 @@ shared_ptr<TcpTransport> WebSocket::setTcpTransport(shared_ptr<TcpTransport> tra
 
 		return emplaceTransport(this, &mTcpTransport, std::move(transport));
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 		remoteClose();
 		throw std::runtime_error("TCP transport initialization failed");
 	}
 }
 
 shared_ptr<HttpProxyTransport> WebSocket::initProxyTransport() {
-	// PLOG_VERBOSE << "Starting Tcp Proxy transport";
+	PLOG_VERBOSE << "Starting Tcp Proxy transport";
 	using State = HttpProxyTransport::State;
 	try {
 		if (auto transport = std::atomic_load(&mProxyTransport))
@@ -315,14 +315,14 @@ shared_ptr<HttpProxyTransport> WebSocket::initProxyTransport() {
 
 		return emplaceTransport(this, &mProxyTransport, std::move(transport));
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 		remoteClose();
 		throw std::runtime_error("Tcp Proxy transport initialization failed");
 	}
 }
 
 shared_ptr<TlsTransport> WebSocket::initTlsTransport() {
-	// PLOG_VERBOSE << "Starting TLS transport";
+	PLOG_VERBOSE << "Starting TLS transport";
 	using State = TlsTransport::State;
 	try {
 		if (auto transport = std::atomic_load(&mTlsTransport))
@@ -369,8 +369,7 @@ shared_ptr<TlsTransport> WebSocket::initTlsTransport() {
 
 #ifdef _WIN32
 		if (std::exchange(verify, false)) {
-			// PLOG_WARNING << "TLS certificate verification with root CA is not supported on
-			// Windows";
+			PLOG_WARNING << "TLS certificate verification with root CA is not supported on Windows";
 		}
 #endif
 
@@ -385,14 +384,14 @@ shared_ptr<TlsTransport> WebSocket::initTlsTransport() {
 
 		return emplaceTransport(this, &mTlsTransport, std::move(transport));
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 		remoteClose();
 		throw std::runtime_error("TLS transport initialization failed");
 	}
 }
 
 shared_ptr<WsTransport> WebSocket::initWsTransport() {
-	// PLOG_VERBOSE << "Starting WebSocket transport";
+	PLOG_VERBOSE << "Starting WebSocket transport";
 	using State = WsTransport::State;
 	try {
 		if (auto transport = std::atomic_load(&mWsTransport))
@@ -430,7 +429,7 @@ shared_ptr<WsTransport> WebSocket::initWsTransport() {
 			switch (transportState) {
 			case State::Connected:
 				if (state == WebSocket::State::Connecting) {
-					// PLOG_DEBUG << "WebSocket open";
+					PLOG_DEBUG << "WebSocket open";
 					if (changeState(WebSocket::State::Open))
 						triggerOpen();
 				}
@@ -454,7 +453,7 @@ shared_ptr<WsTransport> WebSocket::initWsTransport() {
 
 		return emplaceTransport(this, &mWsTransport, std::move(transport));
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 		remoteClose();
 		throw std::runtime_error("WebSocket transport initialization failed");
 	}
@@ -477,7 +476,7 @@ shared_ptr<WsHandshake> WebSocket::getWsHandshake() const {
 }
 
 void WebSocket::closeTransports() {
-	// PLOG_VERBOSE << "Closing transports";
+	PLOG_VERBOSE << "Closing transports";
 
 	if (!changeState(State::Closed))
 		return; // already closed
@@ -523,7 +522,7 @@ void WebSocket::scheduleConnectionTimeout() {
 		ThreadPool::Instance().schedule(timeout, [weak_this = weak_from_this()]() {
 			if (auto locked = weak_this.lock()) {
 				if (locked->state == WebSocket::State::Connecting) {
-					// PLOG_WARNING << "WebSocket connection timed out";
+					PLOG_WARNING << "WebSocket connection timed out";
 					locked->triggerError("Connection timed out");
 					locked->remoteClose();
 				}

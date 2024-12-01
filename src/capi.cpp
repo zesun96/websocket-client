@@ -111,10 +111,10 @@ template <typename F> int wrap(F func) {
 		return int(func());
 
 	} catch (const std::invalid_argument &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 		return WSC_ERR_INVALID;
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 		return WSC_ERR_FAILURE;
 	}
 }
@@ -446,7 +446,7 @@ void wscPreload() {
 	try {
 		wsc::Preload();
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 	}
 }
 
@@ -454,7 +454,7 @@ void wscCleanup() {
 	try {
 		size_t count = eraseAll();
 		if (count != 0) {
-			// PLOG_INFO << count << " objects were not properly destroyed before cleanup";
+			PLOG_INFO << count << " objects were not properly destroyed before cleanup";
 		}
 
 		if (wsc::Cleanup().wait_for(10s) == std::future_status::timeout)
@@ -462,6 +462,6 @@ void wscCleanup() {
 			    "Cleanup timeout (possible deadlock or undestructible object)");
 
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 	}
 }

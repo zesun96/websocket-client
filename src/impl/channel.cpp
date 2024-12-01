@@ -16,7 +16,7 @@ void Channel::triggerOpen() {
 	try {
 		openCallback();
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << "Uncaught exception in callback: " << e.what();
+		PLOG_WARNING << "Uncaught exception in callback: " << e.what();
 	}
 	flushPendingMessages();
 }
@@ -25,7 +25,7 @@ void Channel::triggerClosed() {
 	try {
 		closedCallback();
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << "Uncaught exception in callback: " << e.what();
+		PLOG_WARNING << "Uncaught exception in callback: " << e.what();
 	}
 }
 
@@ -33,7 +33,7 @@ void Channel::triggerError(string error) {
 	try {
 		errorCallback(std::move(error));
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << "Uncaught exception in callback: " << e.what();
+		PLOG_WARNING << "Uncaught exception in callback: " << e.what();
 	}
 }
 
@@ -42,7 +42,7 @@ void Channel::triggerAvailable(size_t count) {
 		try {
 			availableCallback();
 		} catch (const std::exception &e) {
-			// PLOG_WARNING << "Uncaught exception in callback: " << e.what();
+			PLOG_WARNING << "Uncaught exception in callback: " << e.what();
 		}
 	}
 
@@ -56,7 +56,7 @@ void Channel::triggerBufferedAmount(size_t amount) {
 		try {
 			bufferedAmountLowCallback();
 		} catch (const std::exception &e) {
-			// PLOG_WARNING << "Uncaught exception in callback: " << e.what();
+			PLOG_WARNING << "Uncaught exception in callback: " << e.what();
 		}
 	}
 }
@@ -73,7 +73,7 @@ void Channel::flushPendingMessages() {
 		try {
 			messageCallback(*next);
 		} catch (const std::exception &e) {
-			// PLOG_WARNING << "Uncaught exception in callback: " << e.what();
+			PLOG_WARNING << "Uncaught exception in callback: " << e.what();
 		}
 	}
 }

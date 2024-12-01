@@ -151,7 +151,7 @@ size_t WsHandshake::parseHttpRequest(const byte *buffer, size_t size) {
 
 	string method, path, protocol;
 	requestLine >> method >> path >> protocol;
-	// PLOG_DEBUG << "WebSocket request method=\"" << method << "\", path=\"" << path << "\"";
+	PLOG_DEBUG << "WebSocket request method=\"" << method << "\", path=\"" << path << "\"";
 	if (method != "GET")
 		throw RequestError("Invalid request method \"" + method + "\" for WebSocket", 405);
 
@@ -204,7 +204,7 @@ size_t WsHandshake::parseHttpResponse(const byte *buffer, size_t size) {
 	string protocol;
 	unsigned int code = 0;
 	status >> protocol >> code;
-	// PLOG_DEBUG << "WebSocket response code=" << code;
+	PLOG_DEBUG << "WebSocket response code=" << code;
 	if (code != 101)
 		throw std::runtime_error("Unexpected response code " + to_string(code) + " for WebSocket");
 

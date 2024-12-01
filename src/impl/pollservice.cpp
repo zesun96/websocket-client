@@ -55,7 +55,7 @@ void PollService::add(socket_t sock, Params params) {
 	assert(params.callback);
 
 	std::unique_lock lock(mMutex);
-	// PLOG_VERBOSE << "Registering socket in poll service, direction=" << params.direction;
+	PLOG_VERBOSE << "Registering socket in poll service, direction=" << params.direction;
 	auto until = params.timeout ? std::make_optional(clock::now() + *params.timeout) : nullopt;
 	assert(mSocks);
 	mSocks->insert_or_assign(sock, SocketEntry{std::move(params), std::move(until)});
@@ -68,7 +68,7 @@ void PollService::remove(socket_t sock) {
 	assert(sock != INVALID_SOCKET);
 
 	std::unique_lock lock(mMutex);
-	// PLOG_VERBOSE << "Unregistering socket in poll service";
+	PLOG_VERBOSE << "Unregistering socket in poll service";
 	assert(mSocks);
 	mSocks->erase(sock);
 
@@ -120,7 +120,7 @@ void PollService::process(std::vector<struct pollfd> &pfds) {
 				if (it->revents & POLLNVAL || it->revents & POLLERR ||
 				    (it->revents & POLLHUP &&
 				     !(it->events & POLLIN))) { // MacOS sets POLLHUP on connection failure
-					// PLOG_VERBOSE << "Poll error event";
+					PLOG_VERBOSE << "Poll error event";
 					auto callback = std::move(params.callback);
 					mSocks->erase(sock);
 					callback(Event::Error);
@@ -133,23 +133,23 @@ void PollService::process(std::vector<struct pollfd> &pfds) {
 					auto callback = params.callback;
 					if (it->revents & POLLIN ||
 					    it->revents & POLLHUP) { // Windows does not set POLLIN on close
-						// PLOG_VERBOSE << "Poll in event";
+						PLOG_VERBOSE << "Poll in event";
 						callback(Event::In);
 					}
 					if (it->revents & POLLOUT) {
-						// PLOG_VERBOSE << "Poll out event";
+						PLOG_VERBOSE << "Poll out event";
 						callback(Event::Out);
 					}
 
 				} else if (entry.until && clock::now() >= *entry.until) {
-					// PLOG_VERBOSE << "Poll timeout event";
+					PLOG_VERBOSE << "Poll timeout event";
 					auto callback = std::move(params.callback);
 					mSocks->erase(sock);
 					callback(Event::Timeout);
 				}
 
 			} catch (const std::exception &e) {
-				// PLOG_WARNING << e.what();
+				PLOG_WARNING << e.what();
 				mSocks->erase(sock);
 			}
 		}
@@ -160,7 +160,7 @@ void PollService::process(std::vector<struct pollfd> &pfds) {
 
 void PollService::runLoop() {
 	utils::this_thread::set_name("wsc poll");
-	// PLOG_DEBUG << "Poll service started";
+	PLOG_DEBUG << "Poll service started";
 
 	try {
 		assert(mSocks);
@@ -175,16 +175,16 @@ void PollService::runLoop() {
 				if (next) {
 					auto msecs = duration_cast<milliseconds>(
 					    std::max(clock::duration::zero(), *next - clock::now() + 1ms));
-					// PLOG_VERBOSE << "Entering poll, timeout=" << msecs.count() << "ms";
+					PLOG_VERBOSE << "Entering poll, timeout=" << msecs.count() << "ms";
 					timeout = static_cast<int>(msecs.count());
 				} else {
-					// PLOG_VERBOSE << "Entering poll";
+					PLOG_VERBOSE << "Entering poll";
 					timeout = -1;
 				}
 
 				ret = ::poll(pfds.data(), static_cast<nfds_t>(pfds.size()), timeout);
 
-				// PLOG_VERBOSE << "Exiting poll";
+				PLOG_VERBOSE << "Exiting poll";
 
 			} while (ret < 0 && (sockerrno == SEINTR || sockerrno == SEAGAIN));
 
@@ -199,10 +199,10 @@ void PollService::runLoop() {
 			process(pfds);
 		}
 	} catch (const std::exception &e) {
-		// PLOG_FATAL << "Poll service failed: " << e.what();
+		PLOG_FATAL << "Poll service failed: " << e.what();
 	}
 
-	// PLOG_DEBUG << "Poll service stopped";
+	PLOG_DEBUG << "Poll service stopped";
 }
 
 std::ostream &operator<<(std::ostream &out, PollService::Direction direction) {

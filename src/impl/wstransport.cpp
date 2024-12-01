@@ -56,7 +56,7 @@ WsTransport::WsTransport(LowerTransport lower, shared_ptr<WsHandshake> handshake
 
 	onRecv(std::move(recvCallback));
 
-	// PLOG_DEBUG << "Initializing WebSocket transport";
+	PLOG_DEBUG << "Initializing WebSocket transport";
 }
 
 WsTransport::~WsTransport() { unregisterIncoming(); }
@@ -78,7 +78,7 @@ bool WsTransport::send(message_ptr message) {
 	if (!message)
 		return false;
 
-	// PLOG_VERBOSE << "Send size=" << message->size();
+	PLOG_VERBOSE << "Send size=" << message->size();
 	return sendFrame({message->type == Message::String ? TEXT_FRAME : BINARY_FRAME, message->data(),
 	                  message->size(), true, mIsClient});
 }
@@ -90,12 +90,12 @@ void WsTransport::close() {
 	if (mCloseSent.exchange(true))
 		return;
 
-	// PLOG_INFO << "WebSocket closing";
+	PLOG_INFO << "WebSocket closing";
 	try {
 		sendFrame({CLOSE, NULL, 0, true, mIsClient});
 	} catch (const std::exception &e) {
 		// The connection might not be open anymore
-		// PLOG_DEBUG << "Unable to send WebSocket close frame: " << e.what();
+		PLOG_DEBUG << "Unable to send WebSocket close frame: " << e.what();
 		changeState(State::Disconnected);
 		return;
 	}
@@ -103,7 +103,7 @@ void WsTransport::close() {
 	ThreadPool::Instance().schedule(std::chrono::seconds(10),
 	                                [this, weak_this = weak_from_this()]() {
 		                                if (auto shared_this = weak_this.lock()) {
-			                                // PLOG_DEBUG << "WebSocket close timeout";
+			                                PLOG_DEBUG << "WebSocket close timeout";
 			                                changeState(State::Disconnected);
 		                                }
 	                                });
@@ -115,7 +115,7 @@ void WsTransport::incoming(message_ptr message) {
 		return; // Drop
 
 	if (message) {
-		// PLOG_VERBOSE << "Incoming size=" << message->size();
+		PLOG_VERBOSE << "Incoming size=" << message->size();
 
 		try {
 			mBuffer.insert(mBuffer.end(), message->begin(), message->end());
@@ -124,13 +124,13 @@ void WsTransport::incoming(message_ptr message) {
 				if (mIsClient) {
 					if (size_t len =
 					        mHandshake->parseHttpResponse(mBuffer.data(), mBuffer.size())) {
-						// PLOG_INFO << "WebSocket client-side open";
+						PLOG_INFO << "WebSocket client-side open";
 						changeState(State::Connected);
 						mBuffer.erase(mBuffer.begin(), mBuffer.begin() + len);
 					}
 				} else {
 					if (size_t len = mHandshake->parseHttpRequest(mBuffer.data(), mBuffer.size())) {
-						// PLOG_INFO << "WebSocket server-side open";
+						PLOG_INFO << "WebSocket server-side open";
 						sendHttpResponse();
 						changeState(State::Connected);
 						mBuffer.erase(mBuffer.begin(), mBuffer.begin() + len);
@@ -141,7 +141,7 @@ void WsTransport::incoming(message_ptr message) {
 			if (state() == State::Connected) {
 				if (message->size() == 0) {
 					// TCP is idle, send a ping
-					// PLOG_DEBUG << "WebSocket sending ping";
+					PLOG_DEBUG << "WebSocket sending ping";
 					uint32_t dummy = 0;
 					sendFrame({PING, reinterpret_cast<byte *>(&dummy), 4, true, mIsClient});
 					addOutstandingPing();
@@ -169,34 +169,34 @@ void WsTransport::incoming(message_ptr message) {
 			return;
 
 		} catch (const WsHandshake::RequestError &e) {
-			// PLOG_WARNING << e.what();
+			PLOG_WARNING << e.what();
 			try {
 				sendHttpError(e.responseCode());
 
 			} catch (const std::exception &e) {
-				// PLOG_WARNING << e.what();
+				PLOG_WARNING << e.what();
 			}
 
 		} catch (const WsHandshake::Error &e) {
-			// PLOG_WARNING << e.what();
+			PLOG_WARNING << e.what();
 
 		} catch (const std::exception &e) {
-			// PLOG_ERROR << e.what();
+			PLOG_ERROR << e.what();
 		}
 	}
 
 	if (state() == State::Connected) {
-		// PLOG_INFO << "WebSocket disconnected";
+		PLOG_INFO << "WebSocket disconnected";
 		changeState(State::Disconnected);
 		recv(nullptr);
 	} else {
-		// PLOG_ERROR << "WebSocket handshake failed";
+		PLOG_ERROR << "WebSocket handshake failed";
 		changeState(State::Failed);
 	}
 }
 
 bool WsTransport::sendHttpRequest() {
-	// PLOG_DEBUG << "Sending WebSocket HTTP request";
+	PLOG_DEBUG << "Sending WebSocket HTTP request";
 
 	const string request = mHandshake->generateHttpRequest();
 	auto data = reinterpret_cast<const byte *>(request.data());
@@ -204,7 +204,7 @@ bool WsTransport::sendHttpRequest() {
 }
 
 bool WsTransport::sendHttpResponse() {
-	// PLOG_DEBUG << "Sending WebSocket HTTP response";
+	PLOG_DEBUG << "Sending WebSocket HTTP response";
 
 	const string response = mHandshake->generateHttpResponse();
 	auto data = reinterpret_cast<const byte *>(response.data());
@@ -212,7 +212,7 @@ bool WsTransport::sendHttpResponse() {
 }
 
 bool WsTransport::sendHttpError(int code) {
-	// PLOG_WARNING << "Sending WebSocket HTTP error response " << code;
+	PLOG_WARNING << "Sending WebSocket HTTP error response " << code;
 
 	const string response = mHandshake->generateHttpError(code);
 	auto data = reinterpret_cast<const byte *>(response.data());
@@ -282,8 +282,8 @@ size_t WsTransport::parseFrame(byte *buffer, size_t size, Frame &frame) {
 
 	size_t length = frame.length;
 	if (frame.length > maxFrameLength) {
-		// PLOG_WARNING << "WebSocket frame is too large (length=" << frame.length
-		//              << "), truncating it";
+		PLOG_WARNING << "WebSocket frame is too large (length=" << frame.length
+		             << "), truncating it";
 		frame.length = maxFrameLength;
 	}
 
@@ -297,29 +297,29 @@ size_t WsTransport::parseFrame(byte *buffer, size_t size, Frame &frame) {
 }
 
 void WsTransport::recvFrame(const Frame &frame) {
-	////PLOG_DEBUG << "WebSocket received frame: opcode=" << int(frame.opcode)
-	//           << ", length=" << frame.length;
+	PLOG_DEBUG << "WebSocket received frame: opcode=" << int(frame.opcode)
+	           << ", length=" << frame.length;
 
 	switch (frame.opcode) {
 	case TEXT_FRAME:
 	case BINARY_FRAME: {
 		size_t size = frame.length;
 		if (size > mMaxMessageSize) {
-			// PLOG_WARNING << "WebSocket message is too large, truncating it";
+			PLOG_WARNING << "WebSocket message is too large, truncating it";
 			size = mMaxMessageSize;
 		}
 		if (!mPartial.empty()) {
-			// PLOG_WARNING << "WebSocket unfinished message: type="
-			//              << (mPartialOpcode == TEXT_FRAME ? "text" : "binary")
-			//              << ", size=" << mPartial.size();
+			PLOG_WARNING << "WebSocket unfinished message: type="
+			             << (mPartialOpcode == TEXT_FRAME ? "text" : "binary")
+			             << ", size=" << mPartial.size();
 			auto type = mPartialOpcode == TEXT_FRAME ? Message::String : Message::Binary;
 			recv(make_message(mPartial.begin(), mPartial.end(), type));
 			mPartial.clear();
 		}
 		mPartialOpcode = frame.opcode;
 		if (frame.fin) {
-			// PLOG_DEBUG << "WebSocket finished message: type="
-			//            << (frame.opcode == TEXT_FRAME ? "text" : "binary") << ", size=" << size;
+			PLOG_DEBUG << "WebSocket finished message: type="
+			           << (frame.opcode == TEXT_FRAME ? "text" : "binary") << ", size=" << size;
 			auto type = frame.opcode == TEXT_FRAME ? Message::String : Message::Binary;
 			recv(make_message(frame.payload, frame.payload + size, type));
 		} else {
@@ -330,13 +330,13 @@ void WsTransport::recvFrame(const Frame &frame) {
 	case CONTINUATION: {
 		mPartial.insert(mPartial.end(), frame.payload, frame.payload + frame.length);
 		if (mPartial.size() > mMaxMessageSize) {
-			// PLOG_WARNING << "WebSocket message is too large, truncating it";
+			PLOG_WARNING << "WebSocket message is too large, truncating it";
 			mPartial.resize(mMaxMessageSize);
 		}
 		if (frame.fin) {
-			// PLOG_DEBUG << "WebSocket finished message: type="
-			//            << (frame.opcode == TEXT_FRAME ? "text" : "binary")
-			//            << ", size=" << mPartial.size();
+			PLOG_DEBUG << "WebSocket finished message: type="
+			           << (frame.opcode == TEXT_FRAME ? "text" : "binary")
+			           << ", size=" << mPartial.size();
 			auto type = mPartialOpcode == TEXT_FRAME ? Message::String : Message::Binary;
 			recv(make_message(mPartial.begin(), mPartial.end(), type));
 			mPartial.clear();
@@ -344,23 +344,23 @@ void WsTransport::recvFrame(const Frame &frame) {
 		break;
 	}
 	case PING: {
-		// PLOG_DEBUG << "WebSocket received ping, sending pong";
+		PLOG_DEBUG << "WebSocket received ping, sending pong";
 		sendFrame({PONG, frame.payload, frame.length, true, mIsClient});
 		break;
 	}
 	case PONG: {
-		// PLOG_DEBUG << "WebSocket received pong";
+		PLOG_DEBUG << "WebSocket received pong";
 		mOutstandingPings = 0;
 		break;
 	}
 	case CLOSE: {
-		// PLOG_INFO << "WebSocket closed";
+		PLOG_INFO << "WebSocket closed";
 		close();
 		changeState(State::Disconnected);
 		break;
 	}
 	default: {
-		// PLOG_ERROR << "Unknown WebSocket opcode: " + to_string(frame.opcode);
+		PLOG_ERROR << "Unknown WebSocket opcode: " + to_string(frame.opcode);
 		close();
 		break;
 	}
@@ -370,8 +370,8 @@ void WsTransport::recvFrame(const Frame &frame) {
 bool WsTransport::sendFrame(const Frame &frame) {
 	std::lock_guard lock(mSendMutex);
 
-	// PLOG_DEBUG << "WebSocket sending frame: opcode=" << int(frame.opcode)
-	//            << ", length=" << frame.length;
+	PLOG_DEBUG << "WebSocket sending frame: opcode=" << int(frame.opcode)
+	           << ", length=" << frame.length;
 
 	byte buffer[14];
 	byte *cur = buffer;

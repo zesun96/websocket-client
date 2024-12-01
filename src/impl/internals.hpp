@@ -19,6 +19,8 @@
 #pragma warning(push, 0)
 #endif
 
+#include "plog/Log.h"
+
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #elif defined(_MSC_VER)

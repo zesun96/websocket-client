@@ -70,7 +70,7 @@ string url_decode(const string &str) {
 				i += 2;
 
 			} catch (...) {
-				// PLOG_WARNING << "Invalid percent-encoded character in URL: \"%" + value + "\"";
+				PLOG_WARNING << "Invalid percent-encoded character in URL: \"%" + value + "\"";
 			}
 		}
 

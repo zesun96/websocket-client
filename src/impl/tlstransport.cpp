@@ -65,7 +65,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
       mHost(std::move(host)), mIsClient(std::visit([](auto l) { return l->isActive(); }, lower)),
       mIncomingQueue(RECV_QUEUE_LIMIT, message_size_func) {
 
-	// PLOG_DEBUG << "Initializing TLS transport (GnuTLS)";
+	PLOG_DEBUG << "Initializing TLS transport (GnuTLS)";
 
 	unsigned int flags = GNUTLS_NONBLOCK | (mIsClient ? GNUTLS_CLIENT : GNUTLS_SERVER);
 	gnutls::check(gnutls_init(&mSession, flags));
@@ -81,7 +81,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 		                                                 : default_certificate_credentials()));
 
 		if (mIsClient && mHost) {
-			// PLOG_VERBOSE << "Server Name Indication: " << *mHost;
+			PLOG_VERBOSE << "Server Name Indication: " << *mHost;
 			gnutls_server_name_set(mSession, GNUTLS_NAME_DNS, mHost->data(), mHost->size());
 		}
 
@@ -100,19 +100,19 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 TlsTransport::~TlsTransport() {
 	stop();
 
-	// PLOG_DEBUG << "Destroying TLS transport";
+	PLOG_DEBUG << "Destroying TLS transport";
 	gnutls_deinit(mSession);
 }
 
 void TlsTransport::start() {
-	// PLOG_DEBUG << "Starting TLS transport";
+	PLOG_DEBUG << "Starting TLS transport";
 	registerIncoming();
 	changeState(State::Connecting);
 	enqueueRecv(); // to initiate the handshake
 }
 
 void TlsTransport::stop() {
-	// PLOG_DEBUG << "Stopping TLS transport";
+	PLOG_DEBUG << "Stopping TLS transport";
 	unregisterIncoming();
 	mIncomingQueue.stop();
 	enqueueRecv();
@@ -125,7 +125,7 @@ bool TlsTransport::send(message_ptr message) {
 	if (!message || message->size() == 0)
 		return outgoing(message); // pass through
 
-	// PLOG_VERBOSE << "Send size=" << message->size();
+	PLOG_VERBOSE << "Send size=" << message->size();
 
 	ssize_t ret;
 	do {
@@ -145,7 +145,7 @@ void TlsTransport::incoming(message_ptr message) {
 		return;
 	}
 
-	// PLOG_VERBOSE << "Incoming size=" << message->size();
+	PLOG_VERBOSE << "Incoming size=" << message->size();
 	mIncomingQueue.push(message);
 	enqueueRecv();
 }
@@ -179,7 +179,7 @@ void TlsTransport::doRecv() {
 
 			} while (!gnutls::check(ret, "Handshake failed")); // Re-call on non-fatal error
 
-			// PLOG_INFO << "TLS handshake finished";
+			PLOG_INFO << "TLS handshake finished";
 			changeState(State::Connected);
 			postHandshake();
 		}
@@ -193,14 +193,14 @@ void TlsTransport::doRecv() {
 
 				// Consider premature termination as remote closing
 				if (ret == GNUTLS_E_PREMATURE_TERMINATION) {
-					// PLOG_DEBUG << "TLS connection terminated";
+					PLOG_DEBUG << "TLS connection terminated";
 					break;
 				}
 
 				if (gnutls::check(ret)) {
 					if (ret == 0) {
 						// Closed
-						// PLOG_DEBUG << "TLS connection cleanly closed";
+						PLOG_DEBUG << "TLS connection cleanly closed";
 						break;
 					}
 					auto *b = reinterpret_cast<byte *>(buffer);
@@ -209,17 +209,17 @@ void TlsTransport::doRecv() {
 			}
 		}
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << "TLS recv: " << e.what();
+		PLOG_ERROR << "TLS recv: " << e.what();
 	}
 
 	gnutls_bye(mSession, GNUTLS_SHUT_WR);
 
 	if (state() == State::Connected) {
-		// PLOG_INFO << "TLS closed";
+		PLOG_INFO << "TLS closed";
 		changeState(State::Disconnected);
 		recv(nullptr);
 	} else {
-		// PLOG_ERROR << "TLS handshake failed";
+		PLOG_ERROR << "TLS handshake failed";
 		changeState(State::Failed);
 	}
 }
@@ -235,7 +235,7 @@ ssize_t TlsTransport::WriteCallback(gnutls_transport_ptr_t ptr, const void *data
 		return ssize_t(len);
 
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << e.what();
+		PLOG_WARNING << e.what();
 		gnutls_transport_set_errno(t->mSession, ECONNRESET);
 		return -1;
 	}
@@ -278,7 +278,7 @@ ssize_t TlsTransport::ReadCallback(gnutls_transport_ptr_t ptr, void *data, size_
 		}
 
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << e.what();
+		PLOG_WARNING << e.what();
 		gnutls_transport_set_errno(t->mSession, ECONNRESET);
 		return -1;
 	}
@@ -296,7 +296,7 @@ int TlsTransport::TimeoutCallback(gnutls_transport_ptr_t ptr, unsigned int /* ms
 		return !t->mIncomingQueue.empty() ? 1 : 0;
 
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << e.what();
+		PLOG_WARNING << e.what();
 		return 1;
 	}
 }
@@ -319,7 +319,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
       mHost(std::move(host)), mIsClient(std::visit([](auto l) { return l->isActive(); }, lower)),
       mIncomingQueue(RECV_QUEUE_LIMIT, message_size_func) {
 
-	// PLOG_DEBUG << "Initializing TLS transport (MbedTLS)";
+	PLOG_DEBUG << "Initializing TLS transport (MbedTLS)";
 
 	psa_crypto_init();
 	mbedtls_entropy_init(&mEntropy);
@@ -346,7 +346,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 		}
 
 		if (mIsClient && mHost) {
-			// PLOG_VERBOSE << "Server Name Indication: " << *mHost;
+			PLOG_VERBOSE << "Server Name Indication: " << *mHost;
 			mbedtls_ssl_set_hostname(&mSsl, mHost->c_str());
 		}
 
@@ -365,7 +365,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 TlsTransport::~TlsTransport() {
 	stop();
 
-	// PLOG_DEBUG << "Destroying TLS transport";
+	PLOG_DEBUG << "Destroying TLS transport";
 	mbedtls_entropy_free(&mEntropy);
 	mbedtls_ctr_drbg_free(&mDrbg);
 	mbedtls_ssl_free(&mSsl);
@@ -373,14 +373,14 @@ TlsTransport::~TlsTransport() {
 }
 
 void TlsTransport::start() {
-	// PLOG_DEBUG << "Starting TLS transport";
+	PLOG_DEBUG << "Starting TLS transport";
 	registerIncoming();
 	changeState(State::Connecting);
 	enqueueRecv(); // to initiate the handshake
 }
 
 void TlsTransport::stop() {
-	// PLOG_DEBUG << "Stopping TLS transport";
+	PLOG_DEBUG << "Stopping TLS transport";
 	unregisterIncoming();
 	mIncomingQueue.stop();
 	enqueueRecv();
@@ -393,7 +393,7 @@ bool TlsTransport::send(message_ptr message) {
 	if (!message || message->size() == 0)
 		return outgoing(message); // pass through
 
-	// PLOG_VERBOSE << "Send size=" << message->size();
+	PLOG_VERBOSE << "Send size=" << message->size();
 
 	int ret;
 	do {
@@ -415,7 +415,7 @@ void TlsTransport::incoming(message_ptr message) {
 		return;
 	}
 
-	// PLOG_VERBOSE << "Incoming size=" << message->size();
+	PLOG_VERBOSE << "Incoming size=" << message->size();
 	mIncomingQueue.push(message);
 	enqueueRecv();
 }
@@ -455,7 +455,7 @@ void TlsTransport::doRecv() {
 				}
 
 				if (mbedtls::check(ret, "Handshake failed")) {
-					// PLOG_INFO << "TLS handshake finished";
+					PLOG_INFO << "TLS handshake finished";
 					changeState(State::Connected);
 					postHandshake();
 					break;
@@ -477,13 +477,13 @@ void TlsTransport::doRecv() {
 				}
 
 				if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-					// PLOG_DEBUG << "TLS connection cleanly closed";
+					PLOG_DEBUG << "TLS connection cleanly closed";
 					break;
 				}
 
 				if (mbedtls::check(ret)) {
 					if (ret == 0) {
-						// PLOG_DEBUG << "TLS connection terminated";
+						PLOG_DEBUG << "TLS connection terminated";
 						break;
 					}
 					auto *b = reinterpret_cast<byte *>(buffer);
@@ -492,15 +492,15 @@ void TlsTransport::doRecv() {
 			}
 		}
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << "TLS recv: " << e.what();
+		PLOG_ERROR << "TLS recv: " << e.what();
 	}
 
 	if (state() == State::Connected) {
-		// PLOG_INFO << "TLS closed";
+		PLOG_INFO << "TLS closed";
 		changeState(State::Disconnected);
 		recv(nullptr);
 	} else {
-		// PLOG_ERROR << "TLS handshake failed";
+		PLOG_ERROR << "TLS handshake failed";
 		changeState(State::Failed);
 	}
 }
@@ -546,7 +546,7 @@ int TlsTransport::ReadCallback(void *ctx, unsigned char *buf, size_t len) {
 		}
 
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << e.what();
+		PLOG_WARNING << e.what();
 		return MBEDTLS_ERR_SSL_INTERNAL_ERROR;
 	}
 }
@@ -575,7 +575,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
       mHost(std::move(host)), mIsClient(std::visit([](auto l) { return l->isActive(); }, lower)),
       mIncomingQueue(RECV_QUEUE_LIMIT, message_size_func) {
 
-	// PLOG_DEBUG << "Initializing TLS transport (OpenSSL)";
+	PLOG_DEBUG << "Initializing TLS transport (OpenSSL)";
 
 	try {
 		if (!(mCtx = SSL_CTX_new(TLS_method()))) // version-flexible
@@ -594,7 +594,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 
 		if (mIsClient) {
 			if (!SSL_CTX_set_default_verify_paths(mCtx)) {
-				// PLOG_WARNING << "SSL root CA certificates unavailable";
+				PLOG_WARNING << "SSL root CA certificates unavailable";
 			}
 		}
 
@@ -623,7 +623,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 			SSL_set_hostflags(mSsl, 0);
 			openssl::check(SSL_set1_host(mSsl, mHost->c_str()), "Failed to set SSL host");
 
-			// PLOG_VERBOSE << "Server Name Indication: " << *mHost;
+			PLOG_VERBOSE << "Server Name Indication: " << *mHost;
 			SSL_set_tlsext_host_name(mSsl, mHost->c_str());
 		}
 
@@ -651,13 +651,13 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 TlsTransport::~TlsTransport() {
 	stop();
 
-	// PLOG_DEBUG << "Destroying TLS transport";
+	PLOG_DEBUG << "Destroying TLS transport";
 	SSL_free(mSsl);
 	SSL_CTX_free(mCtx);
 }
 
 void TlsTransport::start() {
-	// PLOG_DEBUG << "Starting TLS transport";
+	PLOG_DEBUG << "Starting TLS transport";
 	registerIncoming();
 	changeState(State::Connecting);
 
@@ -674,7 +674,7 @@ void TlsTransport::start() {
 }
 
 void TlsTransport::stop() {
-	// PLOG_DEBUG << "Stopping TLS transport";
+	PLOG_DEBUG << "Stopping TLS transport";
 	unregisterIncoming();
 	mIncomingQueue.stop();
 	enqueueRecv();
@@ -687,7 +687,7 @@ bool TlsTransport::send(message_ptr message) {
 	if (!message || message->size() == 0)
 		return outgoing(message); // pass through
 
-	// PLOG_VERBOSE << "Send size=" << message->size();
+	PLOG_VERBOSE << "Send size=" << message->size();
 
 	int err;
 	bool result;
@@ -711,7 +711,7 @@ void TlsTransport::incoming(message_ptr message) {
 		return;
 	}
 
-	// PLOG_VERBOSE << "Incoming size=" << message->size();
+	PLOG_VERBOSE << "Incoming size=" << message->size();
 	mIncomingQueue.push(message);
 	enqueueRecv();
 }
@@ -756,7 +756,7 @@ void TlsTransport::doRecv() {
 				}
 
 				if (openssl::check_error(err, "Handshake failed")) {
-					// PLOG_INFO << "TLS handshake finished";
+					PLOG_INFO << "TLS handshake finished";
 					changeState(State::Connected);
 					postHandshake();
 				}
@@ -782,7 +782,7 @@ void TlsTransport::doRecv() {
 				}
 
 				if (err == SSL_ERROR_ZERO_RETURN) {
-					// PLOG_DEBUG << "TLS connection cleanly closed";
+					PLOG_DEBUG << "TLS connection cleanly closed";
 					break; // No more data can be read
 				}
 			}
@@ -792,15 +792,15 @@ void TlsTransport::doRecv() {
 		SSL_shutdown(mSsl);
 
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << "TLS recv: " << e.what();
+		PLOG_ERROR << "TLS recv: " << e.what();
 	}
 
 	if (state() == State::Connected) {
-		// PLOG_INFO << "TLS closed";
+		PLOG_INFO << "TLS closed";
 		changeState(State::Disconnected);
 		recv(nullptr);
 	} else {
-		// PLOG_ERROR << "TLS handshake failed";
+		PLOG_ERROR << "TLS handshake failed";
 		changeState(State::Failed);
 	}
 }
@@ -823,7 +823,7 @@ void TlsTransport::InfoCallback(const SSL *ssl, int where, int ret) {
 
 	if (where & SSL_CB_ALERT) {
 		if (ret != 256) { // Close Notify
-			              // PLOG_ERROR << "TLS alert: " << SSL_alert_desc_string_long(ret);
+			PLOG_ERROR << "TLS alert: " << SSL_alert_desc_string_long(ret);
 		}
 		t->mIncomingQueue.stop(); // Close the connection
 	}

@@ -20,6 +20,7 @@ more platforms will be test.
 ## Dependencies
 
 - [GnuTLS](https://www.gnutls.org/), [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls/), or [OpenSSL](https://www.openssl.org/)
+- [plog](https://github.com/SergiusTheBest/plog) (as submodule by default)
 
 ## Examples
 

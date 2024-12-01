@@ -53,13 +53,13 @@ TcpTransport::TcpTransport(string hostname, string service, state_callback callb
     : Transport(nullptr, std::move(callback)), mIsActive(true), mHostname(std::move(hostname)),
       mService(std::move(service)), mSock(INVALID_SOCKET) {
 
-	// PLOG_DEBUG << "Initializing TCP transport";
+	PLOG_DEBUG << "Initializing TCP transport";
 }
 
 TcpTransport::TcpTransport(socket_t sock, state_callback callback)
     : Transport(nullptr, std::move(callback)), mIsActive(false), mSock(sock) {
 
-	// PLOG_DEBUG << "Initializing TCP transport with socket";
+	PLOG_DEBUG << "Initializing TCP transport with socket";
 
 	// Configure socket
 	configureSocket();
@@ -111,7 +111,7 @@ bool TcpTransport::send(message_ptr message) {
 	if (!message || message->size() == 0)
 		return trySendQueue();
 
-	// PLOG_VERBOSE << "Send size=" << message->size();
+	PLOG_VERBOSE << "Send size=" << message->size();
 	return outgoing(message);
 }
 
@@ -119,7 +119,7 @@ void TcpTransport::incoming(message_ptr message) {
 	if (!message)
 		return;
 
-	// PLOG_VERBOSE << "Incoming size=" << message->size();
+	PLOG_VERBOSE << "Incoming size=" << message->size();
 	recv(message);
 }
 
@@ -146,7 +146,7 @@ void TcpTransport::connect() {
 	if (state() == State::Connected)
 		throw std::logic_error("TCP is already connected");
 
-	// PLOG_DEBUG << "Connecting to " << mHostname << ":" << mService;
+	PLOG_DEBUG << "Connecting to " << mHostname << ":" << mService;
 	changeState(State::Connecting);
 
 	ThreadPool::Instance().enqueue(weak_bind(&TcpTransport::resolve, this));
@@ -160,7 +160,7 @@ void TcpTransport::resolve() {
 		return; // Cancelled
 
 	try {
-		// PLOG_DEBUG << "Resolving " << mHostname << ":" << mService;
+		PLOG_DEBUG << "Resolving " << mHostname << ":" << mService;
 
 		struct addrinfo hints = {};
 		hints.ai_family = AF_UNSPEC;
@@ -188,7 +188,7 @@ void TcpTransport::resolve() {
 
 		freeaddrinfo(result);
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << e.what();
+		PLOG_WARNING << e.what();
 		changeState(State::Failed);
 		return;
 	}
@@ -208,7 +208,7 @@ void TcpTransport::attempt() {
 	}
 
 	if (mResolved.empty()) {
-		// PLOG_WARNING << "Connection to " << mHostname << ":" << mService << " failed";
+		PLOG_WARNING << "Connection to " << mHostname << ":" << mService << " failed";
 		changeState(State::Failed);
 		return;
 	}
@@ -219,7 +219,7 @@ void TcpTransport::attempt() {
 
 		createSocket(reinterpret_cast<const struct sockaddr *>(&addr), addrlen);
 	} catch (const std::runtime_error &e) {
-		// PLOG_DEBUG << e.what();
+		PLOG_DEBUG << e.what();
 		ThreadPool::Instance().enqueue(weak_bind(&TcpTransport::attempt, this));
 		return;
 	}
@@ -249,11 +249,11 @@ void TcpTransport::attempt() {
 			}
 
 			// Success
-			// PLOG_INFO << "TCP connected";
+			PLOG_INFO << "TCP connected";
 			changeState(State::Connected);
 			setPoll(PollService::Direction::In);
 		} catch (const std::exception &e) {
-			// PLOG_DEBUG << e.what();
+			PLOG_DEBUG << e.what();
 			PollService::Instance().remove(mSock);
 			ThreadPool::Instance().enqueue(weak_bind(&TcpTransport::attempt, this));
 		}
@@ -269,10 +269,10 @@ void TcpTransport::createSocket(const struct sockaddr *addr, socklen_t addrlen) 
 		char serv[MAX_NUMERICSERV_LEN];
 		if (getnameinfo(addr, addrlen, node, MAX_NUMERICNODE_LEN, serv, MAX_NUMERICSERV_LEN,
 		                NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-			// PLOG_DEBUG << "Trying address " << node << ":" << serv;
+			PLOG_DEBUG << "Trying address " << node << ":" << serv;
 		}
 
-		// PLOG_VERBOSE << "Creating TCP socket";
+		PLOG_VERBOSE << "Creating TCP socket";
 
 		// Create socket
 		mSock = ::socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -326,7 +326,7 @@ void TcpTransport::setPoll(PollService::Direction direction) {
 void TcpTransport::close() {
 	std::lock_guard lock(mSendMutex);
 	if (mSock != INVALID_SOCKET) {
-		// PLOG_DEBUG << "Closing TCP socket";
+		PLOG_DEBUG << "Closing TCP socket";
 		PollService::Instance().remove(mSock);
 		::closesocket(mSock);
 		mSock = INVALID_SOCKET;
@@ -369,7 +369,7 @@ bool TcpTransport::trySendMessage(message_ptr &message) {
 				message = make_message(message->end() - size, message->end());
 				return false;
 			} else {
-				// PLOG_ERROR << "Connection closed, errno=" << sockerrno;
+				PLOG_ERROR << "Connection closed, errno=" << sockerrno;
 				throw std::runtime_error("Connection closed");
 			}
 		}
@@ -397,7 +397,7 @@ void TcpTransport::triggerBufferedAmount(size_t amount) {
 	try {
 		mBufferedAmountCallback(amount);
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << "TCP buffered amount callback: " << e.what();
+		PLOG_WARNING << "TCP buffered amount callback: " << e.what();
 	}
 }
 
@@ -409,12 +409,12 @@ void TcpTransport::process(PollService::Event event) {
 	try {
 		switch (event) {
 		case PollService::Event::Error: {
-			// PLOG_WARNING << "TCP connection terminated";
+			PLOG_WARNING << "TCP connection terminated";
 			break;
 		}
 
 		case PollService::Event::Timeout: {
-			// PLOG_VERBOSE << "TCP is idle";
+			PLOG_VERBOSE << "TCP is idle";
 			incoming(make_message(0));
 			setPoll(PollService::Direction::In);
 			return;
@@ -440,7 +440,7 @@ void TcpTransport::process(PollService::Event event) {
 				break; // clean close
 
 			if (sockerrno != SEAGAIN && sockerrno != SEWOULDBLOCK) {
-				// PLOG_WARNING << "TCP connection lost";
+				PLOG_WARNING << "TCP connection lost";
 				break;
 			}
 
@@ -452,10 +452,10 @@ void TcpTransport::process(PollService::Event event) {
 			return;
 		}
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 	}
 
-	// PLOG_INFO << "TCP disconnected";
+	PLOG_INFO << "TCP disconnected";
 	PollService::Instance().remove(mSock);
 	changeState(State::Disconnected);
 	recv(nullptr);

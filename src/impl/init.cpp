@@ -39,7 +39,7 @@ struct Init::TokenPayload {
 				    Init::Instance().doCleanup();
 				    promise.set_value();
 			    } catch (const std::exception &e) {
-				    // PLOG_WARNING << e.what();
+				    PLOG_WARNING << e.what();
 				    promise.set_exception(std::make_exception_ptr(e));
 			    }
 		    },
@@ -101,7 +101,7 @@ void Init::doInit() {
 	if (std::exchange(mInitialized, true))
 		return;
 
-		// PLOG_DEBUG << "Global initialization";
+	PLOG_DEBUG << "Global initialization";
 
 #ifdef _WIN32
 	WSADATA wsaData;
@@ -111,7 +111,7 @@ void Init::doInit() {
 
 	int concurrency = std::thread::hardware_concurrency();
 	int count = std::max(concurrency, MIN_THREADPOOL_SIZE);
-	// PLOG_DEBUG << "Spawning " << count << " threads";
+	PLOG_DEBUG << "Spawning " << count << " threads";
 	ThreadPool::Instance().spawn(count);
 
 	PollService::Instance().start();
@@ -135,7 +135,7 @@ void Init::doCleanup() {
 	if (!std::exchange(mInitialized, false))
 		return;
 
-	// PLOG_DEBUG << "Global cleanup";
+	PLOG_DEBUG << "Global cleanup";
 
 	ThreadPool::Instance().join();
 	ThreadPool::Instance().clear();

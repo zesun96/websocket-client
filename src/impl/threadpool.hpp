@@ -102,7 +102,7 @@ auto ThreadPool::schedule(clock::time_point time, F &&f,
 		try {
 			return bound();
 		} catch (const std::exception &e) {
-			// PLOG_WARNING << e.what();
+			PLOG_WARNING << e.what();
 			throw;
 		}
 	});
