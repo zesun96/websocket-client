@@ -29,7 +29,7 @@ WebSocket::~WebSocket() {
 		impl()->remoteClose();
 		impl()->resetCallbacks(); // not done by impl::WebSocket
 	} catch (const std::exception &e) {
-		// PLOG_ERROR << e.what();
+		PLOG_ERROR << e.what();
 	}
 }
 

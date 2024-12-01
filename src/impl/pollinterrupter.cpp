@@ -108,12 +108,12 @@ void PollInterrupter::process(struct pollfd &pfd) {
 void PollInterrupter::interrupt() {
 #ifdef _WIN32
 	if (::send(mSock, NULL, 0, 0) < 0 && sockerrno != SEAGAIN && sockerrno != SEWOULDBLOCK) {
-		// PLOG_WARNING << "Writing to interrupter socket failed, errno=" << sockerrno;
+		PLOG_WARNING << "Writing to interrupter socket failed, errno=" << sockerrno;
 	}
 #else
 	char dummy = 0;
 	if (::write(mPipeOut, &dummy, 1) < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-		// PLOG_WARNING << "Writing to interrupter pipe failed, errno=" << errno;
+		PLOG_WARNING << "Writing to interrupter pipe failed, errno=" << errno;
 	}
 #endif
 }

@@ -24,14 +24,14 @@ Transport::~Transport() {
 
 void Transport::registerIncoming() {
 	if (mLower) {
-		// PLOG_VERBOSE << "Registering incoming callback";
+		PLOG_VERBOSE << "Registering incoming callback";
 		mLower->onRecv(std::bind(&Transport::incoming, this, std::placeholders::_1));
 	}
 }
 
 void Transport::unregisterIncoming() {
 	if (mLower) {
-		// PLOG_VERBOSE << "Unregistering incoming callback";
+		PLOG_VERBOSE << "Unregistering incoming callback";
 		mLower->onRecv(nullptr);
 	}
 }
@@ -54,7 +54,7 @@ void Transport::recv(message_ptr message) {
 	try {
 		mRecvCallback(message);
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << e.what();
+		PLOG_WARNING << e.what();
 	}
 }
 
@@ -63,7 +63,7 @@ void Transport::changeState(State state) {
 		if (mState.exchange(state) != state)
 			mStateChangeCallback(state);
 	} catch (const std::exception &e) {
-		// PLOG_WARNING << e.what();
+		PLOG_WARNING << e.what();
 	}
 }
 

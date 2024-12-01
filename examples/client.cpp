@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#include "websocket.hpp"
+#include "websocketclient.hpp"
 #include <iostream>
 
 int main(int argc, char **argv) {

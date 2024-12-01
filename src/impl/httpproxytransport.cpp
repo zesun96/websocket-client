@@ -21,7 +21,7 @@ HttpProxyTransport::HttpProxyTransport(shared_ptr<TcpTransport> lower, std::stri
                                        std::string service, state_callback stateCallback)
     : Transport(lower, std::move(stateCallback)), mHostname(std::move(hostname)),
       mService(std::move(service)) {
-	// PLOG_DEBUG << "Initializing HTTP proxy transport";
+	PLOG_DEBUG << "Initializing HTTP proxy transport";
 	if (!lower->isActive())
 		throw std::logic_error("HTTP proxy transport expects the lower transport to be active");
 }
@@ -41,7 +41,7 @@ bool HttpProxyTransport::send(message_ptr message) {
 	if (state() != State::Connected)
 		throw std::runtime_error("HTTP proxy connection is not open");
 
-	// PLOG_VERBOSE << "Send size=" << message->size();
+	PLOG_VERBOSE << "Send size=" << message->size();
 	return outgoing(message);
 }
 
@@ -53,13 +53,13 @@ void HttpProxyTransport::incoming(message_ptr message) {
 		return; // Drop
 
 	if (message) {
-		// PLOG_VERBOSE << "Incoming size=" << message->size();
+		PLOG_VERBOSE << "Incoming size=" << message->size();
 
 		try {
 			if (state() == State::Connecting) {
 				mBuffer.insert(mBuffer.end(), message->begin(), message->end());
 				if (size_t len = parseHttpResponse(mBuffer.data(), mBuffer.size())) {
-					// PLOG_INFO << "HTTP proxy connection open";
+					PLOG_INFO << "HTTP proxy connection open";
 					changeState(State::Connected);
 					mBuffer.erase(mBuffer.begin(), mBuffer.begin() + len);
 
@@ -74,22 +74,22 @@ void HttpProxyTransport::incoming(message_ptr message) {
 
 			return;
 		} catch (const std::exception &e) {
-			// PLOG_ERROR << e.what();
+			PLOG_ERROR << e.what();
 		}
 	}
 
 	if (state() == State::Connected) {
-		// PLOG_INFO << "HTTP proxy disconnected";
+		PLOG_INFO << "HTTP proxy disconnected";
 		changeState(State::Disconnected);
 		recv(nullptr);
 	} else {
-		// PLOG_ERROR << "HTTP proxy connection failed";
+		PLOG_ERROR << "HTTP proxy connection failed";
 		changeState(State::Failed);
 	}
 }
 
 bool HttpProxyTransport::sendHttpRequest() {
-	// PLOG_DEBUG << "Sending HTTP request to proxy";
+	PLOG_DEBUG << "Sending HTTP request to proxy";
 
 	const string request = generateHttpRequest();
 	auto data = reinterpret_cast<const byte *>(request.data());

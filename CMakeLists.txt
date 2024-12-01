@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_GNUTLS "Use GnuTLS instead of OpenSSL" OFF)
 option(USE_MBEDTLS "Use Mbed TLS instead of OpenSSL" OFF)
+option(USE_SYSTEM_PLOG "Use system Plog" ${PREFER_SYSTEM_LIB})
 
 if (USE_GNUTLS AND USE_MBEDTLS)
 	message(FATAL_ERROR "Both USE_MBEDTLS and USE_GNUTLS cannot be enabled at the same time")
@@ -111,7 +112,16 @@ add_library (websocketclient STATIC
   ${LIBWEBSOCKET_CLIENT_HEADERS}
 )
 
+if(USE_SYSTEM_PLOG)
+	find_package(plog REQUIRED)
+else()
+	set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
+	add_subdirectory(deps/plog EXCLUDE_FROM_ALL)
+endif()
+
 target_include_directories(websocketclient PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(websocketclient PRIVATE
+	$<BUILD_INTERFACE:plog::plog>)
 
 if(WIN32)
 	target_link_libraries(websocketclient PUBLIC ws2_32) # winsock2

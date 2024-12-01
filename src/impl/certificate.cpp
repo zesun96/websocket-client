@@ -90,7 +90,7 @@ Certificate Certificate::FromString(string crt_pem, string key_pem) {
 
 Certificate Certificate::FromFile(const string &crt_pem_file, const string &key_pem_file,
                                   const string &pass) {
-	// PLOG_DEBUG << "Importing certificate from PEM file (GnuTLS): " << crt_pem_file;
+	PLOG_DEBUG << "Importing certificate from PEM file (GnuTLS): " << crt_pem_file;
 
 	shared_ptr<gnutls_certificate_credentials_t> creds(gnutls::new_credentials(),
 	                                                   gnutls::free_credentials);
@@ -103,7 +103,7 @@ Certificate Certificate::FromFile(const string &crt_pem_file, const string &key_
 }
 
 Certificate Certificate::Generate(CertificateType type, const string &commonName) {
-	// PLOG_DEBUG << "Generating certificate (GnuTLS)";
+	PLOG_DEBUG << "Generating certificate (GnuTLS)";
 
 	using namespace gnutls;
 	unique_ptr<gnutls_x509_crt_t, decltype(&free_crt)> crt(new_crt(), free_crt);
@@ -275,7 +275,7 @@ Certificate::Certificate(shared_ptr<mbedtls_x509_crt> crt, shared_ptr<mbedtls_pk
       mFingerprint(make_fingerprint(crt.get(), CertificateFingerprint::Algorithm::Sha256)) {}
 
 Certificate Certificate::FromString(string crt_pem, string key_pem) {
-	// PLOG_DEBUG << "Importing certificate from PEM string (MbedTLS)";
+	PLOG_DEBUG << "Importing certificate from PEM string (MbedTLS)";
 
 	auto crt = mbedtls::new_x509_crt();
 	auto pk = mbedtls::new_pk_context();
@@ -294,7 +294,7 @@ Certificate Certificate::FromString(string crt_pem, string key_pem) {
 
 Certificate Certificate::FromFile(const string &crt_pem_file, const string &key_pem_file,
                                   const string &pass) {
-	// PLOG_DEBUG << "Importing certificate from PEM file (MbedTLS): " << crt_pem_file;
+	PLOG_DEBUG << "Importing certificate from PEM file (MbedTLS): " << crt_pem_file;
 
 	auto crt = mbedtls::new_x509_crt();
 	auto pk = mbedtls::new_pk_context();
@@ -308,7 +308,7 @@ Certificate Certificate::FromFile(const string &crt_pem_file, const string &key_
 }
 
 Certificate Certificate::Generate(CertificateType type, const string &commonName) {
-	// PLOG_DEBUG << "Generating certificate (MbedTLS)";
+	PLOG_DEBUG << "Generating certificate (MbedTLS)";
 
 	mbedtls_entropy_context entropy;
 	mbedtls_ctr_drbg_context drbg;
@@ -433,7 +433,7 @@ int dummy_pass_cb(char *buf, int size, int /*rwflag*/, void *u) {
 } // namespace
 
 Certificate Certificate::FromString(string crt_pem, string key_pem) {
-	// PLOG_DEBUG << "Importing certificate from PEM string (OpenSSL)";
+	PLOG_DEBUG << "Importing certificate from PEM string (OpenSSL)";
 
 	BIO *bio = BIO_new(BIO_s_mem());
 	BIO_write(bio, crt_pem.data(), int(crt_pem.size()));
@@ -462,7 +462,7 @@ Certificate Certificate::FromString(string crt_pem, string key_pem) {
 
 Certificate Certificate::FromFile(const string &crt_pem_file, const string &key_pem_file,
                                   const string &pass) {
-	// PLOG_DEBUG << "Importing certificate from PEM file (OpenSSL): " << crt_pem_file;
+	PLOG_DEBUG << "Importing certificate from PEM file (OpenSSL): " << crt_pem_file;
 
 	BIO *bio = openssl::BIO_new_from_file(crt_pem_file);
 	if (!bio)
@@ -495,7 +495,7 @@ Certificate Certificate::FromFile(const string &crt_pem_file, const string &key_
 }
 
 Certificate Certificate::Generate(CertificateType type, const string &commonName) {
-	// PLOG_DEBUG << "Generating certificate (OpenSSL)";
+	PLOG_DEBUG << "Generating certificate (OpenSSL)";
 
 	shared_ptr<X509> x509(X509_new(), X509_free);
 	unique_ptr<BIGNUM, decltype(&BN_free)> serial_number(BN_new(), BN_free);
@@ -511,7 +511,7 @@ Certificate Certificate::Generate(CertificateType type, const string &commonName
 	// See https://www.rfc-editor.org/rfc/rfc8827.html#section-6.5
 	case CertificateType::Default:
 	case CertificateType::Ecdsa: {
-		// PLOG_VERBOSE << "Generating ECDSA P-256 key pair";
+		PLOG_VERBOSE << "Generating ECDSA P-256 key pair";
 #if OPENSSL_VERSION_NUMBER >= 0x30000000
 		pkey = shared_ptr<EVP_PKEY>(EVP_EC_gen("prime256v1"), EVP_PKEY_free);
 		if (!pkey)
@@ -532,7 +532,7 @@ Certificate Certificate::Generate(CertificateType type, const string &commonName
 		break;
 	}
 	case CertificateType::Rsa: {
-		// PLOG_VERBOSE << "Generating RSA key pair";
+		PLOG_VERBOSE << "Generating RSA key pair";
 		const unsigned int bits = 2048;
 #if OPENSSL_VERSION_NUMBER >= 0x30000000
 		pkey = shared_ptr<EVP_PKEY>(EVP_RSA_gen(bits), EVP_PKEY_free);
