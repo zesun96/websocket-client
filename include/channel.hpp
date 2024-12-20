@@ -20,7 +20,7 @@ namespace impl {
 struct Channel;
 }
 
-class Channel : private CheshireCat<impl::Channel> {
+class WSC_CPP_EXPORT Channel : private CheshireCat<impl::Channel> {
 public:
 	virtual ~Channel();
 

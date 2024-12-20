@@ -15,7 +15,7 @@
 
 namespace wsc {
 
-struct ProxyServer {
+struct WSC_CPP_EXPORT ProxyServer {
 	enum class Type { Http, Socks5 };
 
 	ProxyServer(const string &url);
@@ -38,7 +38,7 @@ enum class CertificateType {
 
 enum class TransportPolicy { All = WSC_TRANSPORT_POLICY_ALL, Relay = WSC_TRANSPORT_POLICY_RELAY };
 
-struct WebSocketConfiguration {
+struct WSC_CPP_EXPORT WebSocketConfiguration {
 	bool disableTlsVerification = false; // if true, don't verify the TLS certificate
 	optional<ProxyServer> proxyServer;   // only non-authenticated http supported for now
 	std::vector<string> protocols;

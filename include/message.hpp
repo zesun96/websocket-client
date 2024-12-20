@@ -17,7 +17,7 @@
 
 namespace wsc {
 
-struct Message : binary {
+struct WSC_CPP_EXPORT Message : binary {
 	enum Type { Binary, String, Control, Reset };
 
 	Message(const Message &message) = default;
@@ -55,19 +55,21 @@ message_ptr make_message(Iterator begin, Iterator end, Message::Type type = Mess
 	return message;
 }
 
-message_ptr make_message(size_t size, Message::Type type = Message::Binary, unsigned int stream = 0,
-                         shared_ptr<Reliability> reliability = nullptr);
+WSC_CPP_EXPORT message_ptr make_message(size_t size, Message::Type type = Message::Binary,
+                                        unsigned int stream = 0,
+                                        shared_ptr<Reliability> reliability = nullptr);
 
-message_ptr make_message(binary &&data, Message::Type type = Message::Binary,
-                         unsigned int stream = 0, shared_ptr<Reliability> reliability = nullptr,
-                         shared_ptr<FrameInfo> frameInfo = nullptr);
+WSC_CPP_EXPORT message_ptr make_message(binary &&data, Message::Type type = Message::Binary,
+                                        unsigned int stream = 0,
+                                        shared_ptr<Reliability> reliability = nullptr,
+                                        shared_ptr<FrameInfo> frameInfo = nullptr);
 
-message_ptr make_message(size_t size, message_ptr orig);
+WSC_CPP_EXPORT message_ptr make_message(size_t size, message_ptr orig);
 
-message_ptr make_message(message_variant data);
+WSC_CPP_EXPORT message_ptr make_message(message_variant data);
 
-message_variant to_variant(Message &&message);
-message_variant to_variant(const Message &message);
+WSC_CPP_EXPORT message_variant to_variant(Message &&message);
+WSC_CPP_EXPORT message_variant to_variant(const Message &message);
 
 } // namespace wsc
 

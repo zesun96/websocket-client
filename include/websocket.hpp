@@ -21,7 +21,7 @@ struct WebSocket;
 
 }
 
-class WebSocket final : private CheshireCat<impl::WebSocket>, public Channel {
+class WSC_CPP_EXPORT WebSocket final : private CheshireCat<impl::WebSocket>, public Channel {
 public:
 	enum class State : int {
 		Connecting = 0,

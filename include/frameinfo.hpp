@@ -13,7 +13,7 @@
 
 namespace wsc {
 
-struct FrameInfo {
+struct WSC_CPP_EXPORT FrameInfo {
 	FrameInfo(uint8_t payloadType, uint32_t timestamp)
 	    : payloadType(payloadType), timestamp(timestamp) {};
 	uint8_t payloadType;    // Indicates codec of the frame

@@ -9,6 +9,20 @@
 #ifndef WEBSOCKET_CLIENT_COMMON_H
 #define WEBSOCKET_CLIENT_COMMON_H
 
+#ifdef WSC_STATIC
+#define WSC_CPP_EXPORT
+#else // dynamic library
+#ifdef _WIN32
+#ifdef WSC_EXPORTS
+#define WSC_CPP_EXPORT __declspec(dllexport) // building the library
+#else
+#define WSC_CPP_EXPORT __declspec(dllimport) // using the library
+#endif
+#else // not WIN32
+#define WSC_CPP_EXPORT
+#endif
+#endif
+
 #ifdef _WIN32
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0602 // Windows 8
