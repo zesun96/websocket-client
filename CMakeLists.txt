@@ -5,14 +5,21 @@
 cmake_minimum_required (VERSION 3.8)
 
 project ("websocket-client")
+set(PROJECT_DESCRIPTION "C/C++ WebSocket network library")
+
+include(GNUInstallDirs)
 
 # C++ standard requirements.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Options
+option(BUILD_SHARED_LIBS "Build shared library" ON)
+option(BUILD_SHARED_DEPS_LIBS "Build submodules as shared libraries" OFF)
 option(USE_GNUTLS "Use GnuTLS instead of OpenSSL" OFF)
 option(USE_MBEDTLS "Use Mbed TLS instead of OpenSSL" OFF)
 option(USE_SYSTEM_PLOG "Use system Plog" ${PREFER_SYSTEM_LIB})
+option(WSC_UPDATE_VERSION_HEADER "Enable updating the version header" OFF)
 
 if (USE_GNUTLS AND USE_MBEDTLS)
 	message(FATAL_ERROR "Both USE_MBEDTLS and USE_GNUTLS cannot be enabled at the same time")
@@ -22,15 +29,10 @@ if(USE_GNUTLS)
 	option(USE_NETTLE "Use Nettle in libjuice" ON)
 else()
 	option(USE_NETTLE "Use Nettle in libjuice" OFF)
-
-	if(NOT USE_SYSTEM_SRTP)
-		if (USE_MBEDTLS)
-			option(ENABLE_MBEDTLS "Enable Mbed TLS crypto engine for libSRTP" ON)
-		else()
-			option(ENABLE_OPENSSL "Enable OpenSSL crypto engine for libSRTP" ON)
-		endif()
-	endif()
 endif()
+
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WIN32)
 	add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -107,10 +109,26 @@ set(
   src/impl/wstransport.cpp
 )
 
-add_library (websocketclient STATIC
+if(WSC_UPDATE_VERSION_HEADER)
+	configure_file (
+		${PROJECT_SOURCE_DIR}/cmake/version.h.in
+		${CMAKE_CURRENT_SOURCE_DIR}/include/version.h
+	)
+endif()
+
+add_library (websocketclient
 	${WSC_SOURCE_FILES}
-  ${LIBWEBSOCKET_CLIENT_HEADERS}
-)
+  ${LIBWEBSOCKET_CLIENT_HEADERS})
+
+add_library(websocketclient-static STATIC EXCLUDE_FROM_ALL
+	${WSC_SOURCE_FILES}
+  ${LIBWEBSOCKET_CLIENT_HEADERS})
+
+target_compile_definitions(websocketclient PRIVATE WSC_EXPORTS)
+if (NOT BUILD_SHARED_LIBS)
+	target_compile_definitions(websocketclient PUBLIC WSC_STATIC)
+endif()
+target_compile_definitions(websocketclient-static PUBLIC WSC_STATIC)
 
 if(USE_SYSTEM_PLOG)
 	find_package(plog REQUIRED)
@@ -125,9 +143,13 @@ target_include_directories(websocketclient PRIVATE ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(websocketclient PRIVATE
 	$<BUILD_INTERFACE:plog::plog>)
 
+target_include_directories(websocketclient-static PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(websocketclient-static PRIVATE
+  $<BUILD_INTERFACE:plog::plog>)
+
 if(WIN32)
 	target_link_libraries(websocketclient PUBLIC ws2_32) # winsock2
-	#target_link_libraries(websocketclient-static PUBLIC ws2_32) # winsock2
+	target_link_libraries(websocketclient-static PUBLIC ws2_32) # winsock2
 endif()
 
 if (USE_GNUTLS)
@@ -141,17 +163,17 @@ if (USE_GNUTLS)
 			IMPORTED_LOCATION "${GNUTLS_LIBRARIES}")
 	endif()
 	target_compile_definitions(websocketclient PRIVATE USE_GNUTLS=1)
-	#target_compile_definitions(websocketclient-static PRIVATE USE_GNUTLS=1)
+	target_compile_definitions(websocketclient-static PRIVATE USE_GNUTLS=1)
 	target_link_libraries(websocketclient PRIVATE GnuTLS::GnuTLS)
-	#target_link_libraries(websocketclient-static PRIVATE GnuTLS::GnuTLS)
+	target_link_libraries(websocketclient-static PRIVATE GnuTLS::GnuTLS)
 elseif(USE_MBEDTLS)
 	if(NOT TARGET MbedTLS::MbedTLS)
 		find_package(MbedTLS 3 REQUIRED)
 	endif()
 	target_compile_definitions(websocketclient PRIVATE USE_MBEDTLS=1)
-	#target_compile_definitions(websocketclient-static PRIVATE USE_MBEDTLS=1)
+	target_compile_definitions(websocketclient-static PRIVATE USE_MBEDTLS=1)
 	target_link_libraries(websocketclient PRIVATE MbedTLS::MbedTLS)
-	#target_link_libraries(websocketclient-static PRIVATE MbedTLS::MbedTLS)
+	target_link_libraries(websocketclient-static PRIVATE MbedTLS::MbedTLS)
 else()
 	if(APPLE)
 		# This is a bug in CMake that causes it to prefer the system version over
@@ -171,9 +193,9 @@ else()
 	endif()
 	find_package(OpenSSL REQUIRED)
 	target_compile_definitions(websocketclient PRIVATE USE_GNUTLS=0)
-	#target_compile_definitions(websocketclient-static PRIVATE USE_GNUTLS=0)
+	target_compile_definitions(websocketclient-static PRIVATE USE_GNUTLS=0)
 	target_link_libraries(websocketclient PRIVATE OpenSSL::SSL)
-	#target_link_libraries(websocketclient-static PRIVATE OpenSSL::SSL)
+	target_link_libraries(websocketclient-static PRIVATE OpenSSL::SSL)
 endif()
 
 if(NOT BUILD_EXAMPLES)

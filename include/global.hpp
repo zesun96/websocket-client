@@ -29,10 +29,10 @@ enum class LogLevel { // Don't change, it must match plog severity
 
 typedef std::function<void(LogLevel level, string message)> LogCallback;
 
-void InitLogger(LogLevel level, LogCallback callback = nullptr);
+WSC_CPP_EXPORT void InitLogger(LogLevel level, LogCallback callback = nullptr);
 
-void Preload();
-std::shared_future<void> Cleanup();
+WSC_CPP_EXPORT void Preload();
+WSC_CPP_EXPORT std::shared_future<void> Cleanup();
 
 struct SctpSettings {
 	// For the following settings, not set means optimized default
@@ -50,9 +50,9 @@ struct SctpSettings {
 	optional<std::chrono::milliseconds> heartbeatInterval;
 };
 
-void SetSctpSettings(SctpSettings s);
+WSC_CPP_EXPORT void SetSctpSettings(SctpSettings s);
 
-std::ostream &operator<<(std::ostream &out, LogLevel level);
+WSC_CPP_EXPORT std::ostream &operator<<(std::ostream &out, LogLevel level);
 
 } // namespace wsc
 
